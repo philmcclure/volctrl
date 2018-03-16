@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# this is used with FN-keys tied together with xbindkeys to control 
-# the system volume and output to screen with osd_cat. Will also
-# work outside of X now (via ssh, framebuffer, etc.)
-
 if [ -z $(which osd_cat) ]; then
     echo "You need to install osd_cat";
 fi
