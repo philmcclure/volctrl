@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# this is used with FN-keys tied together with xbindkeys to control 
+# the system volume and output to screen with osd_cat. Will also
+# work outside of X now (via ssh, framebuffer, etc.)
+
+if [ -z $(which osd_cat) ]; then
+    echo "You need to install osd_cat";
+fi
+
+FONT='-*-impact-*-*-*-*-*-320-*-*-*-*-*-*'
+mute_status=$(amixer -M get Master | tail -n1 | awk '{ print $6 }' | sed 's/\[//' | sed 's/\]//')
+
+percentage(){
+pervol=$(amixer -M get Master | tail -n1 | cut -d[ -f2- | cut -d] -f1)
+}
+
+screen_notify(){
+    echo "$@" | osd_cat -d2 -O4 -cwhite -pmiddle -Acenter -l1 -f "$FONT" - &
+}
+
+usage(){
+cat<<p_use
+$(basename $0) u  volume up
+$(basename $0) d  volume down
+$(basename $0) m  toggle mute on/off
+$(basename $0) h  this help
+p_use
+
+}
+
+mute(){
+if [ "$mute_status" == "on" ];then
+    status="Volume: Muted";
+    amixer set Master mute >/dev/null
+    if [ -z "$DISPLAY" ]; then
+        echo $status
+    else    
+        screen_notify $status
+    fi
+else
+    status="Volume: Unmuted";
+    amixer set Master unmute >/dev/null
+    if [ -z "$DISPLAY" ]; then
+        echo $status
+    else
+        screen_notify $status
+    fi
+fi
+}
+
+volup(){
+if [ "$mute_status" == "off" ];then
+        eval `amixer -M set "Master" toggle 2>&1 >/dev/null`
+fi
+
+eval `amixer -M set "Master" playback 5%+ 2>&1 >/dev/null`
+percentage
+volpercentage="Volume: $pervol"
+if [ -z "$DISPLAY" ]; then
+    echo $volpercentage
+else
+    screen_notify $volpercentage
+fi
+}
+
+voldown(){
+if [ "$mute_status" == "off" ];then
+        eval $(amixer -M set "Master" toggle 2>&1 >/dev/null)
+fi
+
+eval $(amixer -M set "Master" playback 5%- 2>&1 >/dev/null)
+percentage
+volpercentage="Volume: $pervol"
+if [ -z "$DISPLAY" ]; then
+    echo "Volume: $pervol"
+else
+    screen_notify $volpercentage
+fi
+}
+
+case $1 in
+u) volup;;
+d) voldown;;
+m) mute;;
+*) usage;;
+esac
